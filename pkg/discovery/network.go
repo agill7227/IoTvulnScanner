@@ -31,13 +31,11 @@ type Scanner struct {
 
 func NewScanner(iface string, ipRange string) (*Scanner, error) {
 	if iface == "" {
-		// Find default interface
 		interfaces, err := net.Interfaces()
 		if err != nil {
 			return nil, fmt.Errorf("failed to list interfaces: %v", err)
 		}
 
-		// Print available interfaces
 		fmt.Println("\nAvailable network interfaces:")
 		for _, i := range interfaces {
 			addrs, _ := i.Addrs()
@@ -51,15 +49,12 @@ func NewScanner(iface string, ipRange string) (*Scanner, error) {
 			if err != nil {
 				continue
 			}
-			// Skip interfaces without addresses or loopback
 			if len(addrs) == 0 || i.Flags&net.FlagLoopback != 0 {
 				continue
 			}
-			// Skip down interfaces
 			if i.Flags&net.FlagUp == 0 {
 				continue
 			}
-			// On Windows, prefer Wi-Fi interface
 			if runtime.GOOS == "windows" &&
 				(strings.Contains(i.Name, "Wi-Fi") || strings.Contains(i.Name, "Wireless")) {
 				iface = i.Name
@@ -71,17 +66,14 @@ func NewScanner(iface string, ipRange string) (*Scanner, error) {
 		fmt.Printf("\nSelected interface: %s\n", iface)
 	}
 
-	// Try exact name match first
 	intf, err := net.InterfaceByName(iface)
 	if err != nil {
-		// If exact match fails, try to find by description
 		interfaces, err := net.Interfaces()
 		if err != nil {
 			return nil, fmt.Errorf("failed to list interfaces: %v", err)
 		}
 
 		for _, i := range interfaces {
-			// On Windows, try matching against the interface description
 			if i.Name == "Wi-Fi" || i.Name == iface {
 				intf = &i
 				break
@@ -109,28 +101,23 @@ func NewScanner(iface string, ipRange string) (*Scanner, error) {
 func (s *Scanner) ScanNetwork() ([]Device, error) {
 	fmt.Printf("\nStarting network scan on %s for range %s\n", s.Interface.Name, s.IPRange)
 
-	// Parse IP range
 	var startIP, endIP net.IP
 	if strings.Contains(s.IPRange, "-") {
-		// Range format: 192.168.1.1-5
 		parts := strings.Split(s.IPRange, "-")
 		startIP = net.ParseIP(parts[0])
 		baseIP := strings.Join(strings.Split(parts[0], ".")[:3], ".") + "."
 		endIP = net.ParseIP(baseIP + parts[1])
 	} else if strings.Contains(s.IPRange, "/") {
-		// CIDR format: 192.168.1.0/24
 		_, ipnet, err := net.ParseCIDR(s.IPRange)
 		if err != nil {
 			return nil, fmt.Errorf("invalid IP range: %v", err)
 		}
 		startIP = ipnet.IP
-		// Calculate the broadcast address (last IP in range)
 		endIP = make(net.IP, len(ipnet.IP))
 		for i := range ipnet.IP {
 			endIP[i] = ipnet.IP[i] | ^ipnet.Mask[i]
 		}
 	} else {
-		// Single IP
 		startIP = net.ParseIP(s.IPRange)
 		endIP = startIP
 	}
@@ -141,7 +128,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 
 	fmt.Printf("Scanning IP range from %s to %s\n", startIP, endIP)
 
-	// For Windows, try to find the correct network interface
 	interfaceName := s.Interface.Name
 	if runtime.GOOS == "windows" {
 		devices, err := pcap.FindAllDevs()
@@ -157,7 +143,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 			}
 		}
 
-		// Find the matching device
 		var deviceFound bool
 		for _, device := range devices {
 			if strings.Contains(device.Description, "Wi-Fi") ||
@@ -180,7 +165,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 	}
 	defer handle.Close()
 
-	// Set BPF filter for ARP packets
 	err = handle.SetBPFFilter("arp")
 	if err != nil {
 		return nil, fmt.Errorf("failed to set BPF filter: %v", err)
@@ -191,7 +175,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 	deviceMap := make(map[string]Device)
 	discoveredCount := 0
 
-	// Start a goroutine to send ARP requests
 	go func() {
 		start := ipToInt(startIP)
 		end := ipToInt(endIP)
@@ -216,13 +199,11 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 		time.Sleep(2 * time.Second)
 	}()
 
-	// Start a timer to stop scanning
 	go func() {
 		time.Sleep(s.Timeout)
 		close(stop)
 	}()
 
-	// Start packet capture
 	packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 	for packet := range packetSource.Packets() {
 		select {
@@ -260,7 +241,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 				deviceMap[ip] = device
 				discoveredCount++
 
-				// Print a cleaner device discovery message
 				manufacturer := device.Manufacturer
 				if manufacturer == "" {
 					manufacturer = "Unknown"
@@ -273,7 +253,6 @@ func (s *Scanner) ScanNetwork() ([]Device, error) {
 	return devices, nil
 }
 
-// Helper function to convert IP to 32-bit integer
 func ipToInt(ip net.IP) int64 {
 	ip = ip.To4()
 	if ip == nil {
@@ -282,7 +261,6 @@ func ipToInt(ip net.IP) int64 {
 	return int64(ip[0])<<24 | int64(ip[1])<<16 | int64(ip[2])<<8 | int64(ip[3])
 }
 
-// Helper function to convert 32-bit integer to IP
 func intToIP(nn int64) net.IP {
 	ip := make(net.IP, 4)
 	ip[0] = byte(nn >> 24)
@@ -293,7 +271,6 @@ func intToIP(nn int64) net.IP {
 }
 
 func (s *Scanner) SendARPRequest(targetIP net.IP) error {
-	// Get the source IP address for our interface
 	var sourceIP net.IP
 	addrs, err := s.Interface.Addrs()
 	if err != nil {
@@ -313,7 +290,6 @@ func (s *Scanner) SendARPRequest(targetIP net.IP) error {
 		return fmt.Errorf("no IPv4 address found for interface")
 	}
 
-	// Create and send the ARP packet without debug output
 	eth := layers.Ethernet{
 		SrcMAC:       s.Interface.HardwareAddr,
 		DstMAC:       net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
@@ -343,7 +319,6 @@ func (s *Scanner) SendARPRequest(targetIP net.IP) error {
 		return fmt.Errorf("failed to serialize packet: %v", err)
 	}
 
-	// For Windows, try to find the correct network interface
 	interfaceName := s.Interface.Name
 	if runtime.GOOS == "windows" {
 		devices, err := pcap.FindAllDevs()
@@ -351,7 +326,6 @@ func (s *Scanner) SendARPRequest(targetIP net.IP) error {
 			return fmt.Errorf("failed to list pcap devices: %v", err)
 		}
 
-		// Find the matching device
 		var deviceFound bool
 		for _, device := range devices {
 			if strings.Contains(device.Description, "Wi-Fi") ||
@@ -377,7 +351,6 @@ func (s *Scanner) SendARPRequest(targetIP net.IP) error {
 }
 
 func (d *Device) identifyManufacturer() {
-	// Convert MAC to uppercase for consistency
 	macPrefix := strings.ToUpper(d.MAC.String()[:8])
 
 	manufacturers := map[string]string{
@@ -397,14 +370,12 @@ func (d *Device) identifyManufacturer() {
 	if manufacturer, ok := manufacturers[macPrefix]; ok {
 		d.Manufacturer = manufacturer
 	} else {
-		// Try with shorter prefix
 		macPrefix = strings.ToUpper(d.MAC.String()[:6])
 		if manufacturer, ok := manufacturers[macPrefix]; ok {
 			d.Manufacturer = manufacturer
 		}
 	}
 
-	// Identify device type based on manufacturer
 	switch d.Manufacturer {
 	case "SAMSUNG":
 		d.DeviceType = "Samsung Smart TV"
@@ -438,7 +409,6 @@ func hasPort(ports []int, port int) bool {
 	return false
 }
 
-// Common MAC address prefixes for manufacturers
 func getMACVendor(prefix string) string {
 	vendors := map[string]string{
 		"00:E0:4C": "SAMSUNG",

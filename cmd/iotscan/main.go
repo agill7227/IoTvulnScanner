@@ -1,3 +1,7 @@
+// look at the readMe for pre-requisites
+//use for ethical reasons only
+//armaan
+
 package main
 
 import (
@@ -46,7 +50,6 @@ security risks in IoT environments. Designed for network administrators and secu
 		Run:   runDiscover,
 	}
 
-	// Add flags to scan command
 	scanCmd.Flags().StringVarP(&ipRange, "range", "r", "", "IP range to scan (e.g., 192.168.1.0/24)")
 	scanCmd.Flags().StringVarP(&interface_, "interface", "i", "", "Network interface to use")
 	scanCmd.Flags().StringVarP(&reportFormat, "report-format", "f", "html", "Report format (html/json)")
@@ -54,7 +57,6 @@ security risks in IoT environments. Designed for network administrators and secu
 	scanCmd.Flags().StringVarP(&portRange, "ports", "p", "", "Port range to scan (default: common IoT ports)")
 	scanCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 
-	// Add flags to discover command
 	discoverCmd.Flags().StringVarP(&ipRange, "range", "r", "", "IP range to scan (e.g., 192.168.1.0/24)")
 	discoverCmd.Flags().StringVarP(&interface_, "interface", "i", "", "Network interface to use")
 	discoverCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
@@ -69,23 +71,19 @@ security risks in IoT environments. Designed for network administrators and secu
 }
 
 func parsePorts(portRange string) []int {
-	// If no port range specified, return empty slice to use default IoT ports
 	if portRange == "" {
 		return []int{}
 	}
 
 	var ports []int
-	// Split by comma
 	ranges := strings.Split(portRange, ",")
 	for _, r := range ranges {
-		// Convert single port
 		port, err := strconv.Atoi(r)
 		if err == nil {
 			ports = append(ports, port)
 			continue
 		}
 
-		// Try range (e.g., "80-100")
 		parts := strings.Split(r, "-")
 		if len(parts) == 2 {
 			start, err1 := strconv.Atoi(parts[0])
@@ -101,33 +99,28 @@ func parsePorts(portRange string) []int {
 }
 
 func runScan(cmd *cobra.Command, args []string) {
-	// Initialize network scanner
 	netScanner, err := discovery.NewScanner(interface_, ipRange)
 	if err != nil {
 		log.Fatalf("Failed to initialize network scanner: %v", err)
 	}
 
-	// Start device discovery
 	fmt.Println("Starting device discovery...")
 	devices, err := netScanner.ScanNetwork()
 	if err != nil {
 		log.Fatalf("Failed to scan network: %v", err)
 	}
 
-	// Initialize scan results
 	results := &report.ScanResult{
 		Timestamp:    time.Now(),
 		NetworkRange: ipRange,
 		TotalDevices: len(devices),
 	}
 
-	// Scan each discovered device
 	for _, device := range devices {
 		if verbose {
 			fmt.Printf("Scanning device: %s\n", device.IP)
 		}
 
-		// Port scanning
 		portScanner := scanner.NewPortScanner(device.IP.String())
 		portScanner.SetPorts(parsePorts(portRange))
 		portScanner.SetVerbose(verbose)
@@ -136,14 +129,12 @@ func runScan(cmd *cobra.Command, args []string) {
 			fmt.Printf("Warning: port scan failed for %s: %v\n", device.IP, err)
 		}
 
-		// Vulnerability scanning
 		vulnScanner := vulnscan.NewVulnScanner(device.IP.String())
 		vulns, err := vulnScanner.ScanVulnerabilities(nil)
 		if err != nil && verbose {
 			fmt.Printf("Warning: vulnerability scan failed for %s: %v\n", device.IP, err)
 		}
 
-		// Add results
 		deviceResult := report.DeviceResult{
 			Device:          device,
 			OpenPorts:       ports,
@@ -152,7 +143,6 @@ func runScan(cmd *cobra.Command, args []string) {
 		results.Devices = append(results.Devices, deviceResult)
 	}
 
-	// Generate report
 	outputPath := fmt.Sprintf("%s.%s", outputFile, reportFormat)
 	reportGen := report.NewReportGenerator(results, outputPath, reportFormat)
 
@@ -166,20 +156,17 @@ func runScan(cmd *cobra.Command, args []string) {
 }
 
 func runDiscover(cmd *cobra.Command, args []string) {
-	// Initialize network scanner
 	netScanner, err := discovery.NewScanner(interface_, ipRange)
 	if err != nil {
 		log.Fatalf("Failed to initialize network scanner: %v", err)
 	}
 
-	// Start device discovery
 	fmt.Println("Starting device discovery...")
 	devices, err := netScanner.ScanNetwork()
 	if err != nil {
 		log.Fatalf("Failed to scan network: %v", err)
 	}
 
-	// Print results in a clean format
 	fmt.Printf("\nDiscovered devices:\n")
 	fmt.Printf("%-16s %-20s %-15s\n", "IP Address", "MAC Address", "Manufacturer")
 	fmt.Printf("%-16s %-20s %-15s\n", strings.Repeat("-", 16), strings.Repeat("-", 17), strings.Repeat("-", 15))

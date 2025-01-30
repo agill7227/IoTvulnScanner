@@ -42,7 +42,6 @@ security risks in IoT environments. Designed for network administrators and secu
 				}
 			}
 
-			// Parse ports string into []int
 			var portList []int
 			if ports != "" {
 				portStrings := strings.Split(ports, ",")
@@ -55,7 +54,6 @@ security risks in IoT environments. Designed for network administrators and secu
 					portList = append(portList, port)
 				}
 			} else {
-				// Default to common IoT ports if none specified
 				portList = []int{8001, 8002, 8080, 80, 443, 23, 22, 21, 554, 1900, 5683}
 			}
 
@@ -65,7 +63,6 @@ security risks in IoT environments. Designed for network administrators and secu
 
 			fmt.Println("Starting device discovery...")
 
-			// Create and run network discovery scanner
 			discoveryScanner, err := discovery.NewScanner("", ipRange)
 			if err != nil {
 				fmt.Printf("Failed to initialize discovery scanner: %v\n", err)
@@ -78,7 +75,6 @@ security risks in IoT environments. Designed for network administrators and secu
 				os.Exit(1)
 			}
 
-			// Initialize result first
 			result := &report.ScanResult{
 				Timestamp:    time.Now(),
 				NetworkRange: ipRange,
@@ -88,7 +84,6 @@ security risks in IoT environments. Designed for network administrators and secu
 
 			var deviceResults []report.DeviceResult
 
-			// For each discovered device, perform port and vulnerability scanning
 			for _, device := range discoveredDevices {
 				if verbose {
 					fmt.Printf("\nScanning device: %s (%s)\n", device.IP, device.MAC)
@@ -96,17 +91,15 @@ security risks in IoT environments. Designed for network administrators and secu
 					fmt.Printf("Device Type: %s\n", device.DeviceType)
 				}
 
-				// Create port scanner
 				portScanner := scanner.NewPortScanner(device.IP.String())
 				portScanner.SetPorts(portList)
 				portScanner.SetTimeout(5 * time.Second)
 
-				// Run port scan
 				fmt.Printf("\nStarting port scan on %s...\n", device.IP)
 				portResults, err := portScanner.ScanPorts()
 				if err != nil {
 					fmt.Printf("Port scan failed for %s: %v\n", device.IP, err)
-					portResults = []scanner.PortResult{} // Initialize empty slice instead of skipping
+					portResults = []scanner.PortResult{}
 				}
 
 				if verbose {
@@ -116,15 +109,13 @@ security risks in IoT environments. Designed for network administrators and secu
 					}
 				}
 
-				// Create and run vulnerability scanner
 				vulnScanner := vulnscan.NewVulnScanner(device.IP.String())
 				vulns, err := vulnScanner.ScanVulnerabilities(getOpenPorts(portResults))
 				if err != nil {
 					fmt.Printf("Vulnerability scan failed for %s: %v\n", device.IP, err)
-					vulns = []vulnscan.Vulnerability{} // Initialize empty slice instead of nil
+					vulns = []vulnscan.Vulnerability{}
 				}
 
-				// Add results
 				deviceResult := report.DeviceResult{
 					Device:          device,
 					OpenPorts:       portResults,
@@ -132,13 +123,11 @@ security risks in IoT environments. Designed for network administrators and secu
 				}
 				deviceResults = append(deviceResults, deviceResult)
 
-				// Update vulnerability statistics
 				for _, vuln := range vulns {
 					result.VulnsByLevel[vuln.Severity]++
 				}
 			}
 
-			// Update final results
 			result.Devices = deviceResults
 
 			reportPath := outputFile
@@ -157,7 +146,6 @@ security risks in IoT environments. Designed for network administrators and secu
 		},
 	}
 
-	// Add flags to scan command
 	scanCmd.Flags().StringVarP(&ipRange, "range", "r", "", "IP range to scan (e.g., 192.168.1.0/24)")
 	scanCmd.Flags().StringVarP(&reportFormat, "report-format", "f", "html", "Report format (html/pdf/json)")
 	scanCmd.Flags().StringVarP(&outputFile, "output", "o", "iotscan-report", "Output file name")
@@ -172,7 +160,6 @@ security risks in IoT environments. Designed for network administrators and secu
 	}
 }
 
-// Helper function to extract port numbers from port results
 func getOpenPorts(results []scanner.PortResult) []int {
 	var ports []int
 	for _, result := range results {
