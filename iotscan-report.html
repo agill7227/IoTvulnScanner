@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IoT Security Scan Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            color: #333;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .device {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .vulnerability {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid #ddd;
+        }
+        .critical { border-left-color: #dc3545; }
+        .high { border-left-color: #fd7e14; }
+        .medium { border-left-color: #ffc107; }
+        .low { border-left-color: #28a745; }
+        .technical-details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .technical-details pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>IoT Security Scan Report</h1>
+        <p>Scan Time: 2025-01-19 22:53:27.9351216 -0600 CST m=&#43;18.825807201</p>
+        <p>Network Range: 192.168.68.61</p>
+        <p>Total Devices: 1</p>
+    </div>
+
+    <h2>Summary</h2>
+    <table>
+        <tr>
+            <th>Severity</th>
+            <th>Count</th>
+        </tr>
+        
+    </table>
+
+    <h2>Detailed Results</h2>
+    
+    <div class="device">
+        <h3>Device: 192.168.68.61</h3>
+        <p>MAC: 74:97:79:75:46:57</p>
+        
+        <p>Manufacturer: LENOVO</p>
+        
+        
+        <p>Device Type: Lenovo Computer</p>
+        
+        
+
+        <h4>Open Ports</h4>
+        
+        <table>
+            <tr>
+                <th>Port</th>
+                <th>Service</th>
+                <th>State</th>
+            </tr>
+            
+            <tr>
+                <td>1900</td>
+                <td>UPNP</td>
+                <td>open/filtered (UDP)</td>
+            </tr>
+            
+            <tr>
+                <td>5683</td>
+                <td>CoAP</td>
+                <td>open/filtered (UDP)</td>
+            </tr>
+            
+            <tr>
+                <td>8001</td>
+                <td>WebSocket API</td>
+                <td>open/filtered (UDP)</td>
+            </tr>
+            
+        </table>
+        
+
+        <h4>Vulnerabilities</h4>
+        
+    </div>
+    
+</body>
+</html>
