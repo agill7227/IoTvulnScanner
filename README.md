@@ -61,8 +61,4 @@ go build -o iotscan
 
 ## License
 
-MIT License - See LICENSE file for details
-
-## Contributing
-
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests. 
+MIT License - See LICENSE file for details 
